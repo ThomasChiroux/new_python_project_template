@@ -1,0 +1,7 @@
+include README*.rst
+include NEWS.rst
+include LICENCE.txt
+include requirements.txt
+include dev-requirements.txt
+include build_scripts/*.py
+include {{cookiecutter.repo_name}}/RELEASE-VERSION

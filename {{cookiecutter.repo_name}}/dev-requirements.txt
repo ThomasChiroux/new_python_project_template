@@ -1,0 +1,20 @@
+# ===== unit tests
+nose
+coverage
+fixtures
+mock
+testscenarios
+
+# ===== code check tools
+pylint
+flake8
+flake8_docstrings
+#hacking
+#pep257  # removed because replaced by flake8_docstrings plugin
+
+# ===== docs
+sphinx
+
+# ===== development and debugging
+ipython
+pudb

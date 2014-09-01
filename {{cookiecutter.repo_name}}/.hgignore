@@ -1,0 +1,19 @@
+syntax: glob
+
+bin
+develop-eggs
+
+*~
+*.egg-info
+*.pyc
+*.swp
+*.orig
+*.log
+{{cookiecutter.repo_name}}/RELEASE-VERSION
+
+tmp
+build
+dist
+eggs/
+_build
+.coverage
