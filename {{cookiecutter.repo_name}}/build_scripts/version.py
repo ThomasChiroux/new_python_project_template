@@ -1,4 +1,24 @@
-"""get version number from dvcs."""
+#
+# Copyright 2014 {{cookiecutter.author}}
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.
+# If not, see <http://www.gnu.org/licenses/gpl.html>
+#
+"""get version number from dvcs.
+
+works for either git or mercurial repo.
+"""
 import io
 from subprocess import Popen, PIPE
 
@@ -6,7 +26,7 @@ from subprocess import Popen, PIPE
 __version__ = "0.0.0"
 
 
-def get_changelog_rst(outputfile):
+def hg_get_changelog_rst(outputfile):
     """output a rst file with the change log in compact version."""
     p = Popen([
         "hg", "log",
@@ -43,7 +63,41 @@ class VersionInfo():
         except Exception:
             return []
 
-    def _get_hg_version(self, branch=None):
+    def read_release_version(self):
+        """try to read the release version file."""
+        try:
+            f = open("RELEASE-VERSION", "r")
+
+            try:
+                version = f.readlines()[0]
+                return version.strip()
+
+            finally:
+                f.close()
+        except:
+            return None
+
+    def write_release_version(self, version):
+        """write the release version file."""
+        f = open("RELEASE-VERSION", "w")
+        f.write("%s\n" % version)
+        f.close()
+
+    def _is_git_repo(self):
+        """try to detect if the repo is a git repo."""
+        if self._popen(["git", "status"]):
+            return True
+        else:
+            return False
+
+    def _is_hg_repo(self):
+        """try to detect if the repo is a git repo."""
+        if self._popen(["hg", "status"]):
+            return True
+        else:
+            return False
+
+    def _hg_get_version(self, branch=None):
         """use mercurial to get last tag and last revision number.
 
         if repo has just been tagged, return 'lasttag'
@@ -82,7 +136,7 @@ class VersionInfo():
                     return "%s.dev%s" % (latest_tag, latest_rev)
 
     @property
-    def current_branch(self):
+    def _hg_current_branch(self):
         """use mercurial to get the current branch.
 
         In case of problem, returns empty string
@@ -96,11 +150,58 @@ class VersionInfo():
         except Exception:
             return ''
 
+    def _git_call_describe(self, abbrev=4):
+        try:
+            p = Popen(['git', 'describe', '--abbrev=%d' % abbrev],
+                      stdout=PIPE, stderr=PIPE)
+            p.stderr.close()
+            line = p.stdout.readlines()[0]
+            return line.strip()
+
+        except:
+            return None
+
+    def _git_get_version(self, abbrev=4):
+        # Read in the version that's currently in RELEASE-VERSION.
+
+        release_version = self.read_release_version()
+
+        # First try to get the current version using “git describe”.
+        version = self._git_call_describe(abbrev)
+
+        # If that doesn't work, fall back on the value that's in
+        # RELEASE-VERSION.
+
+        if version is None:
+            version = release_version
+
+        # If we still don't have anything, that's an error.
+
+        if version is None:
+            raise ValueError("Cannot find the version number!")
+
+        # If the current version is different from what's in the
+        # RELEASE-VERSION file, update the file to be current.
+
+        if version != release_version:
+            self.write_release_version(version)
+
+        # Finally, return the current version.
+        return version
+
     @property
     def version(self):
-        """return the calculed version number."""
-        return self._get_hg_version(self.current_branch)
+        """return the calculed version number.
 
+        return None if no repo found (git or hg)
+        :rtype: str
+        """
+        if self._is_hg_repo():
+            return self._hg_get_version(
+                self._hg_current_branch).decode('utf-8')
+
+        if self._is_git_repo():
+            return self._git_get_version().decode('utf-8')
 
 if __name__ == '__main__':
     print(VersionInfo().version)

@@ -48,8 +48,9 @@ if version is None:
         version_file = open(file_name, "r")
         try:
             version = version_file.readlines()[0]
-            version = version.strip()
-        except:
+            version = version.decode('utf-8').strip()
+        except Exception as exc:
+            print("ERROR while reading RELEASE-VERSION file: %s" % exc)
             version = "0.0.0"
         finally:
             version_file.close()
@@ -76,10 +77,10 @@ class CustomBuild(build_py):
             try:
                 for dir in target_dirs:
                     fobj = open(os.path.join(dir, 'RELEASE-VERSION'), 'w')
-                    fobj.write(version)
+                    fobj.write(version.encode('utf-8'))
                     fobj.close()
-            except:
-                pass
+            except Exception as exc:
+                print("ERROR while writing RELEASE-VERSION file: %s" % exc)
 
         super().run()
 
